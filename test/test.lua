@@ -40,10 +40,55 @@ function test.make_PT_data()
 	}
 	PT.myPetIndexes = { 383, 1537, 1533, 3097, 3101, 3113, 3117, 3121, 392 }
 end
-function test.test_build_character_stream()
-	test.make_PT_data()
+function test.test_build_character_stream_1species_3pets()
+	PT.myPetIDs = {
+		[383] = {
+			{ 25, 4, },  -- 25 << 3 + 4 (204)
+			{ 22, 3, },  -- 179
+			{ 1, 2} }, } -- 10
+	PT.myPetIndexes = { 383 }
 	PT.BuildCharStream()
-	assertEquals("", PT.charStream)
+	assertEquals(string.char(204)..string.char(179)..string.char(10), PT.charStream)
+end
+function test.test_build_character_stream_1species_2pets()
+	PT.myPetIDs = {
+		[383] = {
+			{ 25, 4, }, 	 -- 25 << 3 + 4 (204)
+			{ 22, 3, }, } }  -- 179
+	PT.myPetIndexes = { 383 }
+	PT.BuildCharStream()
+	assertEquals(string.char(204)..string.char(179)..string.char(255), PT.charStream)
+end
+function test.test_build_character_stream_1species_1pet()
+	PT.myPetIDs = {
+		[383] = {
+			{ 22, 3, }, } }  -- 179
+	PT.myPetIndexes = { 383 }
+	PT.BuildCharStream()
+	assertEquals(string.char(179)..string.char(255)..string.char(255), PT.charStream)
+end
+function test.test_build_character_stream_1species_0pets()
+	PT.myPetIDs = {
+		[383] = { } }
+	PT.myPetIndexes = { 383 }
+	PT.BuildCharStream()
+	assertEquals(string.char(255)..string.char(255)..string.char(255), PT.charStream)
+end
+function test.test_build_character_stream_2species_0pets()
+	PT.myPetIDs = {
+		[383] = { },
+		[392] = { }, }
+	PT.myPetIndexes = { 392, 383 }
+	PT.BuildCharStream()
+	assertEquals(string.char(255)..string.char(255)..string.char(255)..string.char(255)..string.char(255)..string.char(255), PT.charStream)
+end
+function test.test_build_character_stream_2species_1pet()
+	PT.myPetIDs = {
+		[383] = { { 25, 4 }, },
+		[392] = { }, }
+	PT.myPetIndexes = { 392, 383 }
+	PT.BuildCharStream()
+	assertEquals(string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255), PT.charStream)
 end
 function test.test_send_message()
 end
