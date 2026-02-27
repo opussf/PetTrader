@@ -67,21 +67,32 @@ function PT.ScanPets()
 	C_PetJournal.SetAllPetTypesChecked(true)
 	C_PetJournal.SetSearchFilter("")
 
+    -- get the speciesID for each petIndex
 	PT.myPetIDs = {}
+    PT.myPetIndexes = {}
 	local numPets, numOwned = C_PetJournal.GetNumPets()
 
 	for petIndex = 1, numPets do
 		local petID, speciesID, _, _, level, _, _, petName, _, _, _, _, _, _, _, isTradeable = C_PetJournal.GetPetInfoByIndex(petIndex)
+        PT.myPetIDs[speciesID] = PT.myPetIDs[speciesID] or {}
 		if(petID) then
 			local rarity = select(5, C_PetJournal.GetPetStats(petID))
 			-- print(speciesID, petName, rarity, isTradeable)
-			PT.myPetIDs[speciesID] = PT.myPetIDs[speciesID] or {}
 			table.insert(PT.myPetIDs[speciesID], {level, rarity})
+            table.insert(PT.myPetIndexes, speciesID)
 		end
 	end
 	PT_myPetIDS = PT.myPetIDs -- save this for debugging
+    sort(PT.myPetIndexes)
+    PT_myPetIndexes = PT.myPetIndexes
 
+    PT.BuildCharStream()
 
 	-- reset values
 	PT.RestorePetFilters()
+end
+function PT.BuildCharStream()
+    local bitIndex = 0
+
+
 end
