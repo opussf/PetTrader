@@ -17,8 +17,8 @@ end
 function test.test_onLoad()
 	PT.OnLoad()
 end
-function test.test_build_character_stream()
-	PT.myPetIDS = {
+function test.make_PT_data()
+	PT.myPetIDs = {
 		[383] = {
 			{ 25, 4, },
 			{ 22, 3, }, },
@@ -39,8 +39,13 @@ function test.test_build_character_stream()
 			{ 7, 4, }, },
 	}
 	PT.myPetIndexes = { 383, 1537, 1533, 3097, 3101, 3113, 3117, 3121, 392 }
+end
+function test.test_build_character_stream()
+	test.make_PT_data()
 	PT.BuildCharStream()
-	print(PT.charStream)
+	assertEquals("", PT.charStream)
+end
+function test.test_send_message()
 end
 
 

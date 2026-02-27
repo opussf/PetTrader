@@ -2,7 +2,7 @@ PT_SLUG, PT = ...
 PT.MSG_ADDONNAME = C_AddOns.GetAddOnMetadata( PT_SLUG, "Title" )
 PT.MSG_VERSION   = C_AddOns.GetAddOnMetadata( PT_SLUG, "Version" )
 PT.MSG_AUTHOR    = C_AddOns.GetAddOnMetadata( PT_SLUG, "Author" )
-PT.prefix = "PT1"
+PT.commPrefix = "PT1"
 
 function PT:OnLoad()
 	SLASH_PT1 = "/PT"
@@ -25,6 +25,7 @@ end
 PT.CHAT_MSG_PARTY_LEADER = PT.CHAT_MSG_PARTY
 PT.CHAT_MSG_SAY = PT.CHAT_MSG_PARTY
 function PT.CHAT_MSG_ADDON(_, prefix, message, distType, sender)
+	print( prefix, message, distType, sender )
 end
 
 -------
@@ -83,16 +84,55 @@ function PT.ScanPets()
 		end
 	end
 	PT_myPetIDS = PT.myPetIDs -- save this for debugging
-    sort(PT.myPetIndexes)
+    -- sort(PT.myPetIndexes)
     PT_myPetIndexes = PT.myPetIndexes
 
     PT.BuildCharStream()
+	PT.SendPackets()
 
 	-- reset values
 	PT.RestorePetFilters()
 end
 function PT.BuildCharStream()
-    local bitIndex = 0
+	local streamTable = {}
 
+	for index, speciesID in ipairs(PT.myPetIndexes) do
+		-- store a 1 if the number of pets is > 0, store a 0 otherwise
+		for count = 1, 3 do
+			streamTable[#streamTable+1] = (PT.myPetIDs[speciesID][count]
+					and string.char( bit.lshift( (PT.myPetIDs[speciesID][count][1] or 0), 3)
+									           + (PT.myPetIDs[speciesID][count][2] or 0) )
+					or string.char(255))
+		end
+	end
+	PT.charStream = table.concat(streamTable)
+	-- 0 = Deflate, 2 = OptimizeForSize
+	PT.compressStream = C_EncodingUtil.CompressString( PT.charStream, 0, 2 )
 
+	PT_charStream = PT.charStream
+	PT_compressStream = PT.compressStream
+	PT_compressStream_size = string.len(PT.compressStream)
+
+	local packetSize = 250
+	local packetCount = math.ceil( string.len(PT.compressStream) / packetSize )
+	PT.packets = {}
+	for i = 1, string.len(PT.compressStream), packetSize do
+		PT.packets[#PT.packets+1] = string.sub( PT.compressStream, i, i + packetSize - 1)
+	end
+	PT_packets = PT.packets
 end
+function PT.SendPackets()
+	local packetCount = #PT.packets
+	for i, packet in ipairs( PT.packets ) do
+		C_ChatInfo.SendAddonMessage(
+				PT.commPrefix,
+				string.char(i).."|"..string.char(packetCount)..packet,
+				"SAY" )
+	end
+end
+
+
+-- C_EncodingUtil.CompressString( string.char(0)..string.char(0)..string.char(0))
+-- C_EncodingUtil.EncodeBase64( string.char(0)..string.char(0)..string.char(0))
+
+-- C_EncodingUtil.CompressString(C_EncodingUtil.EncodeBase64( string.char(0)..string.char(0)..string.char(0)))

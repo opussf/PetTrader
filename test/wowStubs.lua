@@ -2020,7 +2020,10 @@ function C_ChatInfo.IsAddonMessagePrefixRegistered( prefix )
 end
 function C_ChatInfo.RegisterAddonMessagePrefix( prefix )
 end
-function C_ChatInfo.SendAddonMessage()
+function C_ChatInfo.SendAddonMessage( prefix, msg, channel, target )
+	table.insert( chatLog,
+		{ ["msg"] = msg, ["chatType"] = "AddonMessage", ["channel"] = channel, ["prefix"] = prefix, ["target"] = target }
+	)
 	return true
 end
 function C_ChatInfo.SendChatMessage( msg, chatType, language, channel )
@@ -2418,6 +2421,14 @@ function C_MerchantFrame.GetItemInfo( index )
 				 texture = itemInfo.texture
 		}
 	end
+end
+
+----------
+-- C_EncodingUtil
+----------
+C_EncodingUtil = {}
+function C_EncodingUtil.CompressString( strIn, method, level )
+	return strIn
 end
 
 --------
