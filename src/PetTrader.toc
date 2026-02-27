@@ -4,7 +4,7 @@
 ## Author: opussf
 ## Version: @VERSION@
 ## Description: Compares pets to facilitate trading
-## SavedVariables:
+## SavedVariables: PT_myPetIDS
 ## SavedVariablesPerCharacter:
 
 PetTrader.lua
