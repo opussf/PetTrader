@@ -9,7 +9,9 @@ ParseTOC( "../src/PetTrader.toc" )
 
 function test.before()
 	chatLog = {}
+	PT.theirPetIDs = nil
 	PT.OnLoad()
+	PT.PLAYER_ENTERING_WORLD()
 end
 function test.after()
 end
@@ -48,7 +50,7 @@ function test.test_build_character_stream_1species_3pets()
 			{ 1, 2} }, } -- 10
 	PT.myPetIndexes = { 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(204)..string.char(179)..string.char(10), PT.charStream)
+	assertEquals(string.char(11)..string.char(251)..string.char(204)..string.char(179)..string.char(10), PT.charStream)
 end
 function test.test_build_character_stream_1species_2pets()
 	PT.myPetIDs = {
@@ -57,7 +59,7 @@ function test.test_build_character_stream_1species_2pets()
 			{ 22, 3, }, } }  -- 179
 	PT.myPetIndexes = { 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(204)..string.char(179)..string.char(255), PT.charStream)
+	assertEquals(string.char(11)..string.char(250)..string.char(204)..string.char(179), PT.charStream)
 end
 function test.test_build_character_stream_1species_1pet()
 	PT.myPetIDs = {
@@ -65,14 +67,14 @@ function test.test_build_character_stream_1species_1pet()
 			{ 22, 3, }, } }  -- 179
 	PT.myPetIndexes = { 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(179)..string.char(255)..string.char(255), PT.charStream)
+	assertEquals(string.char(11)..string.char(249)..string.char(179), PT.charStream)
 end
 function test.test_build_character_stream_1species_0pets()
 	PT.myPetIDs = {
 		[383] = { } }
 	PT.myPetIndexes = { 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(255)..string.char(255)..string.char(255), PT.charStream)
+	assertEquals(string.char(11)..string.char(248), PT.charStream)
 end
 function test.test_build_character_stream_2species_0pets()
 	PT.myPetIDs = {
@@ -80,7 +82,7 @@ function test.test_build_character_stream_2species_0pets()
 		[392] = { }, }
 	PT.myPetIndexes = { 392, 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(255)..string.char(255)..string.char(255)..string.char(255)..string.char(255)..string.char(255), PT.charStream)
+	assertEquals(string.char(12)..string.char(64)..string.char(11)..string.char(248), PT.charStream)
 end
 function test.test_build_character_stream_2species_1pet()
 	PT.myPetIDs = {
@@ -88,10 +90,54 @@ function test.test_build_character_stream_2species_1pet()
 		[392] = { }, }
 	PT.myPetIndexes = { 392, 383 }
 	PT.BuildCharStream()
-	assertEquals(string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255), PT.charStream)
+	assertEquals(string.char(12)..string.char(64)..string.char(11)..string.char(249)..string.char(204), PT.charStream)
 end
 function test.test_send_message()
+	PT.myPetIDs = {
+		[383] = { { 25, 4 }, },
+		[392] = { }, }
+	PT.myPetIndexes = { 392, 383 }
+	PT.BuildCharStream()
+	PT.SendPackets()
+	assertEquals("PT1", chatLog[1].prefix)
+	assertEquals(string.char(1)..string.char(1)..string.char(12)..string.char(64)..string.char(11)..string.char(249)..string.char(204),
+			chatLog[1].msg)
 end
+function test.notest_get_message_2species_1pet_adds_sender_table()
+	PT.myPetIndexes = { 392, 383 }
+	local msg = string.char(1)..string.char(1)..string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
+	assertTrue(PT.theirPetIDs["Frank-Hyjal"])
+end
+function test.notest_get_message_2species_1pet_decodes_data()
+	PT.myPetIndexes = { 392, 383 }
+	local msg = string.char(1)..string.char(1)..string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
+
+	assertEquals(25, PT.theirPetIDs["Frank-Hyjal"][383][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][383][2])
+end
+function test.notest_get_message_2species_1pet_multi_packet_outoforder_incomplete()
+	PT.myPetIndexes = { 392, 383 }
+	local msg = string.char(2)..string.char(2)..string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
+
+	assertIsNil(PT.theirPetIDs["Frank-Hyjal"].packets[1])
+	assertTrue(PT.theirPetIDs["Frank-Hyjal"].packets[2])
+end
+function test.notest_get_message_2species_1pet_multi_packet_outoforder_complete()
+	PT.myPetIndexes = { 392, 383 }
+	local msg = string.char(2)..string.char(2)..string.char(204)..string.char(255)..string.char(255)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
+	msg = string.char(1)..string.char(2)..string.char(255)..string.char(255)..string.char(255)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
+	test.dump(PT.theirPetIDs)
+
+	assertTrue(PT.theirPetIDs["Frank-Hyjal"].packets[1])
+	assertTrue(PT.theirPetIDs["Frank-Hyjal"].packets[2])
+end
+
+
 
 
 test.run()

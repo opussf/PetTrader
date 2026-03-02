@@ -16,7 +16,6 @@ end
 function PT:PLAYER_ENTERING_WORLD()
 	PetTraderEventFrame:UnregisterEvent("PLAYER_ENTERING_WORLD")
 	PT.myName = UnitName("player")
-	print("Hello "..PT.myName)
 end
 function PT.CHAT_MSG_PARTY(_, text, playerName)
 	print(playerName.." send:"..text)
@@ -24,11 +23,41 @@ function PT.CHAT_MSG_PARTY(_, text, playerName)
 end
 PT.CHAT_MSG_PARTY_LEADER = PT.CHAT_MSG_PARTY
 PT.CHAT_MSG_SAY = PT.CHAT_MSG_PARTY
-function PT.CHAT_MSG_ADDON(_, prefix, message, distType, sender)
-	print( prefix, message, distType, sender )
+function PT.CHAT_MSG_ADDON(_, prefix, msg, distType, sender)
+	print( prefix, msg, distType, sender )
+	PT.theirPetIDs = PT.theirPetIDs or {}
+	if prefix == PT.commPrefix then
+		PT.theirPetIDs[sender] = PT.theirPetIDs[sender] or {packets={}}
+		local packetIndex = string.byte(string.sub( msg, 1, 1 ))
+		local packetTotal = string.byte(string.sub( msg, 2, 2 ))
+		local packet = string.sub( msg, 3 )
+		PT.theirPetIDs[sender].packets[packetIndex] = packet
+		-- look to see if all packets have arrived from that user
+		local haveAllPackets = true
+		for packetIndex = 1, packetTotal do
+			haveAllPackets = haveAllPackets and PT.theirPetIDs[sender].packets[packetIndex]
+		end
+		if haveAllPackets then
+			PT.ProcessPackets(sender)
+		end
+	end
 end
 
 -------
+function PT.ProcessPackets(sender)
+	local compressedStream = table.concat(PT.theirPetIDs[sender].packets)
+	PT.theirPetIDs[sender].packets = nil
+	local decoded = C_EncodingUtil.DecompressString(compressedStream, 0)
+	local numPets, numOwned = C_PetJournal.GetNumPets()
+
+
+
+
+	-- for petIndex = 1, numPets do
+	-- 	local petID, speciesID, _, _, level, _, _, petName, _, _, _, _, _, _, _, isTradeable = C_PetJournal.GetPetInfoByIndex(petIndex)
+
+
+end
 function PT.SavePetFilters()
 	-- save current values
 	PT.previousFilterText = C_PetJournal.GetSearchFilter()
@@ -84,7 +113,6 @@ function PT.ScanPets()
 		end
 	end
 	PT_myPetIDS = PT.myPetIDs -- save this for debugging
-    -- sort(PT.myPetIndexes)
     PT_myPetIndexes = PT.myPetIndexes
 
     PT.BuildCharStream()
@@ -95,16 +123,24 @@ function PT.ScanPets()
 end
 function PT.BuildCharStream()
 	local streamTable = {}
+	local speciesIDCount = 0
 
 	for index, speciesID in ipairs(PT.myPetIndexes) do
-		-- store a 1 if the number of pets is > 0, store a 0 otherwise
-		for count = 1, 3 do
-			streamTable[#streamTable+1] = (PT.myPetIDs[speciesID][count]
-					and string.char( bit.lshift( (PT.myPetIDs[speciesID][count][1] or 0), 3)
-									           + (PT.myPetIDs[speciesID][count][2] or 0) )
-					or string.char(255))
+		local count = #PT.myPetIDs[speciesID]
+		speciesIDCount = bit.lshift( speciesID, 3) + count
+		streamTable[#streamTable+1] = string.char( bit.rshift( speciesIDCount, 8 ) )..
+				string.char( bit.band( speciesIDCount, 255 ) )
+
+		for c = 1, count do
+			streamTable[#streamTable+1] = string.char(
+					bit.lshift( PT.myPetIDs[speciesID][c][1], 3) +
+					PT.myPetIDs[speciesID][c][2] )
 		end
 	end
+
+
+
+
 	PT.charStream = table.concat(streamTable)
 	-- 0 = Deflate, 2 = OptimizeForSize
 	PT.compressStream = C_EncodingUtil.CompressString( PT.charStream, 0, 2 )
@@ -113,7 +149,7 @@ function PT.BuildCharStream()
 	PT_compressStream = PT.compressStream
 	PT_compressStream_size = string.len(PT.compressStream)
 
-	local packetSize = 250
+	local packetSize = 245
 	local packetCount = math.ceil( string.len(PT.compressStream) / packetSize )
 	PT.packets = {}
 	for i = 1, string.len(PT.compressStream), packetSize do
@@ -122,17 +158,31 @@ function PT.BuildCharStream()
 	PT_packets = PT.packets
 end
 function PT.SendPackets()
+	if not C_ChatInfo.IsAddonMessagePrefixRegistered(PT.commPrefix) then
+		C_ChatInfo.RegisterAddonMessagePrefix(PT.commPrefix)
+	end
+
 	local packetCount = #PT.packets
 	for i, packet in ipairs( PT.packets ) do
 		C_ChatInfo.SendAddonMessage(
 				PT.commPrefix,
-				string.char(i).."|"..string.char(packetCount)..packet,
-				"SAY" )
+				string.char(i)..string.char(packetCount)..packet,
+				"GUILD" )
 	end
 end
 
+-- Name = "DecompressString",
+-- 			Type = "Function",
+-- 			MayReturnNothing = true,
+-- 			SecretArguments = "AllowedWhenUntainted",
 
--- C_EncodingUtil.CompressString( string.char(0)..string.char(0)..string.char(0))
--- C_EncodingUtil.EncodeBase64( string.char(0)..string.char(0)..string.char(0))
+-- 			Arguments =
+-- 			{
+-- 				{ Name = "source", Type = "stringView", Nilable = false },
+-- 				{ Name = "method", Type = "CompressionMethod", Nilable = false, Default = "Deflate" },
+-- 			},
 
--- C_EncodingUtil.CompressString(C_EncodingUtil.EncodeBase64( string.char(0)..string.char(0)..string.char(0)))
+-- 			Returns =
+-- 			{
+-- 				{ Name = "output", Type = "string", Nilable = false },
+-- 			},

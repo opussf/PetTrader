@@ -2428,6 +2428,11 @@ end
 ----------
 C_EncodingUtil = {}
 function C_EncodingUtil.CompressString( strIn, method, level )
+	-- compresses.  Return the same string, for testing.
+	return strIn
+end
+function C_EncodingUtil.DecompressString( strIn, method )
+	-- decompresses.  Return the same string, for testing.
 	return strIn
 end
 
