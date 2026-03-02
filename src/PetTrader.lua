@@ -28,8 +28,7 @@ function PT.CHAT_MSG_ADDON(_, prefix, msg, distType, sender)
 	PT.theirPetIDs = PT.theirPetIDs or {}
 	if prefix == PT.commPrefix then
 		PT.theirPetIDs[sender] = PT.theirPetIDs[sender] or {packets={}}
-		local packetIndex = string.byte(string.sub( msg, 1, 1 ))
-		local packetTotal = string.byte(string.sub( msg, 2, 2 ))
+		local packetIndex, packetTotal = string.byte( msg, 1, 2 )
 		local packet = string.sub( msg, 3 )
 		PT.theirPetIDs[sender].packets[packetIndex] = packet
 		-- look to see if all packets have arrived from that user
@@ -48,7 +47,7 @@ function PT.ProcessPackets(sender)
 	local compressedStream = table.concat(PT.theirPetIDs[sender].packets)
 	PT.theirPetIDs[sender].packets = nil
 	local decoded = C_EncodingUtil.DecompressString(compressedStream, 0)
-	local numPets, numOwned = C_PetJournal.GetNumPets()
+
 
 
 
@@ -99,7 +98,6 @@ function PT.ScanPets()
 
     -- get the speciesID for each petIndex
 	PT.myPetIDs = {}
-    PT.myPetIndexes = {}
 	local numPets, numOwned = C_PetJournal.GetNumPets()
 
 	for petIndex = 1, numPets do
@@ -109,11 +107,9 @@ function PT.ScanPets()
 			local rarity = select(5, C_PetJournal.GetPetStats(petID))
 			-- print(speciesID, petName, rarity, isTradeable)
 			table.insert(PT.myPetIDs[speciesID], {level, rarity})
-            table.insert(PT.myPetIndexes, speciesID)
 		end
 	end
 	PT_myPetIDS = PT.myPetIDs -- save this for debugging
-    PT_myPetIndexes = PT.myPetIndexes
 
     PT.BuildCharStream()
 	PT.SendPackets()
@@ -125,7 +121,7 @@ function PT.BuildCharStream()
 	local streamTable = {}
 	local speciesIDCount = 0
 
-	for index, speciesID in ipairs(PT.myPetIndexes) do
+	for speciesID, _ in pairs(PT.myPetIDs) do
 		local count = #PT.myPetIDs[speciesID]
 		speciesIDCount = bit.lshift( speciesID, 3) + count
 		streamTable[#streamTable+1] = string.char( bit.rshift( speciesIDCount, 8 ) )..
