@@ -43,20 +43,6 @@ function PT.CHAT_MSG_ADDON(_, prefix, msg, distType, sender)
 end
 
 -------
-function PT.ProcessPackets(sender)
-	local compressedStream = table.concat(PT.theirPetIDs[sender].packets)
-	PT.theirPetIDs[sender].packets = nil
-	local decoded = C_EncodingUtil.DecompressString(compressedStream, 0)
-
-
-
-
-
-	-- for petIndex = 1, numPets do
-	-- 	local petID, speciesID, _, _, level, _, _, petName, _, _, _, _, _, _, _, isTradeable = C_PetJournal.GetPetInfoByIndex(petIndex)
-
-
-end
 function PT.SavePetFilters()
 	-- save current values
 	PT.previousFilterText = C_PetJournal.GetSearchFilter()
@@ -117,13 +103,26 @@ function PT.ScanPets()
 	-- reset values
 	PT.RestorePetFilters()
 end
+function PT.PairsByKeys( t, f )
+	local a = {}
+	for n in pairs( t ) do table.insert( a, n ) end
+	table.sort( a, f )
+	local i = 0
+	local iter = function()
+		i = i + 1
+		if a[i] == nil then return nil
+		else return a[i], t[a[i]]
+		end
+	end
+	return iter
+end
 function PT.BuildCharStream()
 	local streamTable = {}
 	local speciesIDCount = 0
 
-	for speciesID, _ in pairs(PT.myPetIDs) do
+	for speciesID, _ in PT.PairsByKeys(PT.myPetIDs) do
 		local count = #PT.myPetIDs[speciesID]
-		speciesIDCount = bit.lshift( speciesID, 3) + count
+		speciesIDCount = bit.lshift( speciesID, 3) + count -- shift 3 for a bit of expansion
 		streamTable[#streamTable+1] = string.char( bit.rshift( speciesIDCount, 8 ) )..
 				string.char( bit.band( speciesIDCount, 255 ) )
 
@@ -133,9 +132,6 @@ function PT.BuildCharStream()
 					PT.myPetIDs[speciesID][c][2] )
 		end
 	end
-
-
-
 
 	PT.charStream = table.concat(streamTable)
 	-- 0 = Deflate, 2 = OptimizeForSize
@@ -165,6 +161,33 @@ function PT.SendPackets()
 				string.char(i)..string.char(packetCount)..packet,
 				"GUILD" )
 	end
+end
+-- Process
+function PT.ProcessPackets(sender)
+	local compressedStream = table.concat(PT.theirPetIDs[sender].packets)
+	PT.theirPetIDs[sender].packets = nil
+	local theirPets = PT.theirPetIDs[sender]
+	local bitstream = C_EncodingUtil.DecompressString(compressedStream, 0)
+	print("Hello: "..bitstream)
+	local bitstreamLen = string.len(bitstream)
+	local i = 1  -- start with the first char
+
+	while i < bitstreamLen do
+		local speciesID, count = string.byte(bitstream, i, i+1)
+		local v = speciesID*256 + count
+		print(v)
+		count = v & 0x07  -- low 3 bits
+		speciesID = v >> 3
+		print( "speciesID: "..speciesID.." has: "..count )
+		theirPets[speciesID] = {}
+		for p = 1, count do
+			local levelCount = string.byte(bitstream, i+1+p)
+			theirPets[speciesID][2] = levelCount & 0x07 -- low 3 bits
+			theirPets[speciesID][1] = levelCount >> 3
+		end
+		i = i + 2 + count
+	end
+
 end
 
 -- Name = "DecompressString",
