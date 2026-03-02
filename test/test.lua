@@ -101,32 +101,46 @@ function test.test_get_message_2species_1pet_adds_sender_table()
 	assertTrue(PT.theirPetIDs["Frank-Hyjal"])
 end
 function test.test_get_message_2species_1pet_multi_packet_out_of_order_incomplete()
-	local msg = string.char(2)..string.char(2)..string.char(255)..string.char(255)..string.char(255)..string.char(204)..string.char(255)..string.char(255)
+	local msg = string.char(2, 2, 11, 249, 204, 12, 64)
 	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
 
 	assertIsNil(PT.theirPetIDs["Frank-Hyjal"].packets[1])
 	assertTrue(PT.theirPetIDs["Frank-Hyjal"].packets[2])
 end
 function test.test_get_message_2species_1pet_decodes_data()
-	local msg = string.char(1, 1, 11, 249, 204 )
+	local msg = string.char(1, 1, 11, 249, 204, 12, 64 )
 	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
 
-	assertEquals(25, PT.theirPetIDs["Frank-Hyjal"][383][1])
-	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][383][2])
+	assertEquals(25, PT.theirPetIDs["Frank-Hyjal"][383][1][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][383][1][2])
+	assertTrue( PT.theirPetIDs["Frank-Hyjal"][392])
 end
-
 function test.test_get_message_2species_1pet_multi_packet_out_of_order_complete()
 	local msg = string.char(2, 2, 11, 249, 204)
 	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
 	msg = string.char(1, 2, 12, 64)
 	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
-	test.dump(PT.theirPetIDs)
 
-	assertEquals(25, PT.theirPetIDs["Frank-Hyjal"][383][1])
-	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][383][2])
+	assertEquals(25, PT.theirPetIDs["Frank-Hyjal"][383][1][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][383][1][2])
 	assertTrue( PT.theirPetIDs["Frank-Hyjal"][392])
 end
+function test.test_get_message_1species_3pets_multi_packet()
+	local msg = string.char(1,1,12,67,124,60,60)
+	PT.CHAT_MSG_ADDON(nil, "PT1", msg, "GUILD", "Frank-Hyjal")
 
+	assertEquals(15, PT.theirPetIDs["Frank-Hyjal"][392][1][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][392][1][2])
+	assertEquals( 7, PT.theirPetIDs["Frank-Hyjal"][392][2][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][392][2][2])
+	assertEquals( 7, PT.theirPetIDs["Frank-Hyjal"][392][3][1])
+	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][392][3][2])
+end
+function test.test_save_pet_filters()
+	PT.SavePetFilters()
+	assertTrue(PT.previousSources[1])
+	assertFalse(PT.previousTypes[1])
+end
 
 
 

@@ -24,7 +24,7 @@ end
 PT.CHAT_MSG_PARTY_LEADER = PT.CHAT_MSG_PARTY
 PT.CHAT_MSG_SAY = PT.CHAT_MSG_PARTY
 function PT.CHAT_MSG_ADDON(_, prefix, msg, distType, sender)
-	print( prefix, msg, distType, sender )
+	-- print( prefix, msg, distType, sender )
 	PT.theirPetIDs = PT.theirPetIDs or {}
 	if prefix == PT.commPrefix then
 		PT.theirPetIDs[sender] = PT.theirPetIDs[sender] or {packets={}}
@@ -168,22 +168,21 @@ function PT.ProcessPackets(sender)
 	PT.theirPetIDs[sender].packets = nil
 	local theirPets = PT.theirPetIDs[sender]
 	local bitstream = C_EncodingUtil.DecompressString(compressedStream, 0)
-	print("Hello: "..bitstream)
 	local bitstreamLen = string.len(bitstream)
 	local i = 1  -- start with the first char
 
 	while i < bitstreamLen do
 		local speciesID, count = string.byte(bitstream, i, i+1)
 		local v = speciesID*256 + count
-		print(v)
 		count = v & 0x07  -- low 3 bits
 		speciesID = v >> 3
-		print( "speciesID: "..speciesID.." has: "..count )
+		-- print( v.. " speciesID: "..speciesID.." has: "..count )
 		theirPets[speciesID] = {}
 		for p = 1, count do
 			local levelCount = string.byte(bitstream, i+1+p)
-			theirPets[speciesID][2] = levelCount & 0x07 -- low 3 bits
-			theirPets[speciesID][1] = levelCount >> 3
+			theirPets[speciesID][p] = {}
+			theirPets[speciesID][p][2] = levelCount & 0x07 -- low 3 bits
+			theirPets[speciesID][p][1] = levelCount >> 3
 		end
 		i = i + 2 + count
 	end

@@ -2336,6 +2336,8 @@ C_PetJournal.data = {
 		GUID = 12534
 	},
 }
+C_PetJournal.__sourcesFlags = 0xAA -- 10101010
+C_PetJournal.__typeFlags = 0x55 -- 01010101
 function C_PetJournal.GetSummonedPetGUID()
 	return C_PetJournal.data.summoned.GUID
 end
@@ -2343,6 +2345,24 @@ function C_PetJournal.GetPetInfoByPetID( petID )
 	-- speciesID, customName, level, xp, maxXp, displayID, isFavorite, name, icon, petType, creatureID, sourceText, description, isWild, canBattle, tradable, unique, obtainable = C_PetJournal.GetPetInfoByPetID(petID)
 	-- @TODO: Look this up
 	return 0,"CustomPetName",0,0,0,0,0,"PetName"
+end
+function C_PetJournal.GetSearchFilter()
+	return ""
+end
+function C_PetJournal.IsFilterChecked(filterID)
+	return true
+end
+function C_PetJournal.GetNumPetSources()
+	return 8
+end
+function C_PetJournal.IsPetSourceChecked(index)
+	return (C_PetJournal.__sourcesFlags & bit.lshift(1, index)>0 and true or false)
+end
+function C_PetJournal.GetNumPetTypes()
+	return 8
+end
+function C_PetJournal.IsPetTypeChecked(index)
+	return (C_PetJournal.__typeFlags & bit.lshift(1, index)>0 and true or false)
 end
 
 ----------
