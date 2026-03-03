@@ -137,9 +137,22 @@ function test.test_get_message_1species_3pets_multi_packet()
 	assertEquals( 4, PT.theirPetIDs["Frank-Hyjal"][392][3][2])
 end
 function test.test_save_pet_filters()
+	PT.previousSources = nil
+	PT.previousType = nil
+	C_PetJournal.__sourcesFlags = 0xAA
+	C_PetJournal.__typeFlags = 0x55
 	PT.SavePetFilters()
 	assertTrue(PT.previousSources[1])
 	assertFalse(PT.previousTypes[1])
+end
+function test.test_restore_pet_filters()
+	C_PetJournal.__sourcesFlags = 255
+	C_PetJournal.__typeFlags = 255
+	PT.previousSources = {true, true, true, true, false, false, false, false}
+	PT.previousTypes = {false, false, false, false, true, true, true, true}
+	PT.RestorePetFilters()
+	assertEquals(15, C_PetJournal.__sourcesFlags)
+	assertEquals(240, C_PetJournal.__typeFlags)
 end
 
 
