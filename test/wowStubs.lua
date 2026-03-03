@@ -232,6 +232,8 @@ EquipmentSets = {
 -- Instance variables
 LE_PARTY_CATEGORY_HOME = 1
 LE_PARTY_CATEGORY_INSTANCE = 2
+LE_PET_JOURNAL_FILTER_COLLECTED = 1
+LE_PET_JOURNAL_FILTER_NOT_COLLECTED = 2
 -- WowToken
 TokenPrice = 123456 -- 12G 34S 45C
 --- Factions
@@ -2020,7 +2022,10 @@ function C_ChatInfo.IsAddonMessagePrefixRegistered( prefix )
 end
 function C_ChatInfo.RegisterAddonMessagePrefix( prefix )
 end
-function C_ChatInfo.SendAddonMessage()
+function C_ChatInfo.SendAddonMessage( prefix, msg, channel, target )
+	table.insert( chatLog,
+		{ ["msg"] = msg, ["chatType"] = "AddonMessage", ["channel"] = channel, ["prefix"] = prefix, ["target"] = target }
+	)
 	return true
 end
 function C_ChatInfo.SendChatMessage( msg, chatType, language, channel )
@@ -2333,6 +2338,9 @@ C_PetJournal.data = {
 		GUID = 12534
 	},
 }
+C_PetJournal.__filterFlags = 0xFF
+C_PetJournal.__sourcesFlags = 0xAA -- 10101010
+C_PetJournal.__typeFlags = 0x55 -- 01010101
 function C_PetJournal.GetSummonedPetGUID()
 	return C_PetJournal.data.summoned.GUID
 end
@@ -2340,6 +2348,47 @@ function C_PetJournal.GetPetInfoByPetID( petID )
 	-- speciesID, customName, level, xp, maxXp, displayID, isFavorite, name, icon, petType, creatureID, sourceText, description, isWild, canBattle, tradable, unique, obtainable = C_PetJournal.GetPetInfoByPetID(petID)
 	-- @TODO: Look this up
 	return 0,"CustomPetName",0,0,0,0,0,"PetName"
+end
+function C_PetJournal.GetSearchFilter()
+	return ""
+end
+function C_PetJournal.SetSearchFilter(newFilter)
+end
+function C_PetJournal.IsFilterChecked(index)
+	return (C_PetJournal.__filterFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetFilterChecked(filterID, checked)
+	if checked then
+		C_PetJournal.__filterFlags = C_PetJournal.__filterFlags | bit.lshift(1, filterID-1)
+	else
+		C_PetJournal.__filterFlags = C_PetJournal.__filterFlags & ~bit.lshift(1, filterID-1)
+	end
+end
+function C_PetJournal.GetNumPetSources()
+	return 8
+end
+function C_PetJournal.IsPetSourceChecked(index)
+	return (C_PetJournal.__sourcesFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetPetSourceChecked(index, checked)
+	if checked then
+		C_PetJournal.__sourcesFlags = C_PetJournal.__sourcesFlags | bit.lshift(1, index-1)
+	else
+		C_PetJournal.__sourcesFlags = C_PetJournal.__sourcesFlags & ~bit.lshift(1, index-1)
+	end
+end
+function C_PetJournal.GetNumPetTypes()
+	return 8
+end
+function C_PetJournal.IsPetTypeChecked(index, checked)
+	return (C_PetJournal.__typeFlags & bit.lshift(1, index))>0
+end
+function C_PetJournal.SetPetTypeFilter(index, checked)
+	if checked then
+		C_PetJournal.__typeFlags = C_PetJournal.__typeFlags | bit.lshift(1, index-1)
+	else
+		C_PetJournal.__typeFlags = C_PetJournal.__typeFlags & ~bit.lshift(1, index-1)
+	end
 end
 
 ----------
@@ -2418,6 +2467,19 @@ function C_MerchantFrame.GetItemInfo( index )
 				 texture = itemInfo.texture
 		}
 	end
+end
+
+----------
+-- C_EncodingUtil
+----------
+C_EncodingUtil = {}
+function C_EncodingUtil.CompressString( strIn, method, level )
+	-- compresses.  Return the same string, for testing.
+	return strIn
+end
+function C_EncodingUtil.DecompressString( strIn, method )
+	-- decompresses.  Return the same string, for testing.
+	return strIn
 end
 
 --------

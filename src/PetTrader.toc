@@ -1,0 +1,11 @@
+## Title: Pet Trader
+## Notes: Compares pets to facilitate trading
+## Interface: @INTERFACE@
+## Author: opussf
+## Version: @VERSION@
+## Description: Compares pets to facilitate trading
+## SavedVariables: PT_myPetIDS PT_charStream PT_compressStream PT_compressStream_size PT_packetCount PT_packets
+## SavedVariablesPerCharacter:
+
+PetTrader.lua
+PetTrader.xml
